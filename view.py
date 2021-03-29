@@ -4,11 +4,14 @@ import pyqtgraph.opengl as gl
 import numpy as np
 from PIL import Image
 import sys
+from PyQt5 import QtTest
+
+np.random.seed(1828283)
 
 # constants
 
 # resolution <= 512
-board_size = 40
+board_size = 100
 # maximum height of points
 max_height = 20
 # size of dots
@@ -22,24 +25,35 @@ max_jump_height = 30
 # maximum initial speed
 max_initial_speed = np.sqrt(2 * g * max_jump_height)
 # adding speed to make jumps lower
-min_speed_boost, max_speed_boost = 4, 5
+min_speed_boost, max_speed_boost = 2, 4
 # show dots
 are_visible_dots = False
 # width of lines on path
 line_width = 1
 # for picture dots
 dot_opaqueness = 1.
-number_of_random_walks = 1
-length_of_random_walk = 20
+number_of_random_walks = 50
+length_of_random_walk = 400
 # resolution of jump
 time_frames_in_jump = 20
 # side of image
 image_side = 512
+# delay between drawing lines
+line_delay = 0
+# path to image for map
+path_to_image = 'images/genie.png'
+# distance from origin for viewing pictures
+view_height = 70
+# to watch how path emerges
+real_time_path_drawing_enabled = False
+
+shortest_jump = True
+jump_trajectory_shortener = -1 if shortest_jump else 1
 
 app = QApplication([])
 w = gl.GLViewWidget()
 w.show()
-
+w.setCameraPosition(distance=view_height, elevation=90, azimuth=0)
 # g = gl.GLGridItem()
 # g.setSize(x=board_size, y=board_size,z=max_height)
 # w.addItem(g)
@@ -58,8 +72,9 @@ def read_image(path):
 
 def get_compressed_image(path):
     image = read_image(path)
-    factor = np.ceil(image_side / board_size).astype(int)
+    factor = image_side // board_size
     compressed_image = image[::factor][:, ::factor]
+    compressed_image = compressed_image[:board_size, :board_size]
     return compressed_image
 
 
@@ -78,7 +93,8 @@ def get_rgba_to_height(image):
 
 def get_point_cloud_and_colors():
     # returns cloud of points as 3 arrays and their colors
-    image = get_compressed_image('images/deadpool.png')
+    image = get_compressed_image(path_to_image)
+    assert image.shape == (board_size, board_size, 4)
     x_grid, y_grid = get_coordinate_grid()
     flat_image = np.reshape(image, (image.shape[0] ** 2, 4))
     rgb_to_height = get_rgba_to_height(flat_image)
@@ -122,7 +138,12 @@ def sufficient_speed(height):
     return np.sqrt(2 * g * height)
 
 
-def get_points_of_step(x, y, x_next, y_next, speed):
+def get_points_of_jump(x, y, x_next, y_next):
+    height_difference = signed_height_difference(x, y, x_next, y_next)
+    speed = sufficient_speed(
+        (2 if height_difference < 0 else height_difference)
+        + np.random.randint(min_speed_boost, max_speed_boost))
+
     dx, dy = x_next - x, y_next - y
     dz = z_grid[(x + dx) * board_size + (y + dy)] - z_grid[x * board_size + y]
     distance_in_xy_plane = np.sqrt(dx ** 2 + dy ** 2)
@@ -133,7 +154,8 @@ def get_points_of_step(x, y, x_next, y_next, speed):
         return speed * np.sin(theta) * time - (g * time ** 2) / 2
 
     theta = np.arctan(
-        (speed ** 2 + np.sqrt(speed ** 4 - g * (g * distance_in_xy_plane ** 2 + 2 * dz * speed ** 2)))
+        (speed ** 2 + jump_trajectory_shortener * np.sqrt(
+            speed ** 4 - g * (g * distance_in_xy_plane ** 2 + 2 * dz * speed ** 2)))
         / (g * distance_in_xy_plane))
     time = distance_in_xy_plane / (np.cos(theta) * speed)
     times = np.linspace(0, time, time_frames_in_jump)
@@ -143,22 +165,20 @@ def get_points_of_step(x, y, x_next, y_next, speed):
     return np.array([xs, ys, zs]).T
 
 
-def draw_step(x, y, x_next, y_next):
-    height_difference = signed_height_difference(x, y, x_next, y_next)
-    speed = sufficient_speed(
-        (1 if height_difference < 0 else height_difference)
-        + np.random.randint(min_speed_boost, max_speed_boost))
-
-    points = get_points_of_step(x, y, x_next, y_next, speed)
-
+def draw_jump(x, y, x_next, y_next):
+    points = get_points_of_jump(x, y, x_next, y_next)
+    colors = np.full((points.shape[0], 4), color[x * board_size + y])
     # center the plot
     points[:, [0, 1]] -= np.array([board_size // 2, board_size // 2])
 
     line = gl.GLLinePlotItem()
     # so that points are not transparent
     line.setGLOptions('translucent')
-    line.setData(pos=points, color=tuple(color[x * board_size + y]), width=line_width)
+    line.setData(pos=points, color=colors, width=line_width)
+
     w.addItem(line)
+    if real_time_path_drawing_enabled:
+        QtTest.QTest.qWait(line_delay)
 
 
 def on_board(point):
@@ -197,16 +217,20 @@ def get_random_walk(path_length=100):
 
 def draw_walk(walk):
     for i in range(walk.shape[0] - 1):
-        draw_step(*np.ravel([walk[i], walk[i + 1]]))
+        draw_jump(*np.ravel([walk[i], walk[i + 1]]))
 
 
-def draw_walks():
+def draw_random_walk():
+    draw_walk(get_random_walk(path_length=length_of_random_walk))
+
+
+def draw_random_walks():
     for i in range(number_of_random_walks):
-        draw_walk(get_random_walk(path_length=length_of_random_walk))
+        draw_random_walk()
 
 
 if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
     if are_visible_dots:
         draw_scatter_picture()
-    draw_walks()
+    draw_random_walks()
     QApplication.instance().exec_()
