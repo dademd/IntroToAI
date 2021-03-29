@@ -22,17 +22,17 @@ max_jump_height = 30
 # maximum initial speed
 max_initial_speed = np.sqrt(2 * g * max_jump_height)
 # adding speed to make jumps lower
-min_speed_boost, max_speed_boost = 1, 2
+min_speed_boost, max_speed_boost = 4, 5
 # show dots
 are_visible_dots = False
 # width of lines on path
 line_width = 1
 # for picture dots
 dot_opaqueness = 1.
-number_of_random_walks = 40
-length_of_random_walk = 100
+number_of_random_walks = 1
+length_of_random_walk = 20
 # resolution of jump
-points_in_jump = 20
+time_frames_in_jump = 20
 # side of image
 image_side = 512
 
@@ -76,7 +76,8 @@ def get_rgba_to_height(image):
     return lambda rgba: rgba_height(rgba) / height * max_height
 
 
-def get_platform():
+def get_point_cloud_and_colors():
+    # returns cloud of points as 3 arrays and their colors
     image = get_compressed_image('images/deadpool.png')
     x_grid, y_grid = get_coordinate_grid()
     flat_image = np.reshape(image, (image.shape[0] ** 2, 4))
@@ -89,8 +90,8 @@ def get_platform():
     return x_grid, y_grid, z_grid, normalized_image_colors
 
 
-x_grid, y_grid, z_grid, color = get_platform()
-print(x_grid.shape, y_grid.shape, z_grid.shape)
+x_grid, y_grid, z_grid, color = get_point_cloud_and_colors()
+
 
 def set_opaqueness_of_image_dots():
     color[:, 3] = dot_opaqueness
@@ -105,10 +106,6 @@ def draw_scatter_picture():
     sp2 = gl.GLScatterPlotItem(pos=pos, color=color, size=dot_size)
     sp2.setGLOptions('translucent')
     w.addItem(sp2)
-
-
-if are_visible_dots:
-    draw_scatter_picture()
 
 
 # ------- plotting walks
@@ -126,43 +123,46 @@ def sufficient_speed(height):
 
 
 def get_points_of_step(x, y, x_next, y_next, speed):
-    x_difference, y_difference = x_next - x, y_next - y
-    z = z_grid[(x + x_difference) * board_size + (y + y_difference)] - z_grid[x * board_size + y]
-    d = np.sqrt(x_difference ** 2 + y_difference ** 2)
-    xs = np.linspace(x, x + x_difference, points_in_jump)
-    ys = np.linspace(y, y + y_difference, points_in_jump)
+    dx, dy = x_next - x, y_next - y
+    dz = z_grid[(x + dx) * board_size + (y + dy)] - z_grid[x * board_size + y]
+    distance_in_xy_plane = np.sqrt(dx ** 2 + dy ** 2)
+    xs = np.linspace(x, x + dx, time_frames_in_jump)
+    ys = np.linspace(y, y + dy, time_frames_in_jump)
 
-    def z_coord(distance):
-        return speed * np.sin(theta) * distance - (g * distance ** 2) / 2
+    def z(time):
+        return speed * np.sin(theta) * time - (g * time ** 2) / 2
 
-    theta = np.arctan((speed ** 2 + np.sqrt(speed ** 4 - g * (g * d ** 2 + 2 * z * speed ** 2))) / (g * d))
-    t = d / (np.cos(theta) * speed)
-    ts = np.linspace(0, t, points_in_jump)
+    theta = np.arctan(
+        (speed ** 2 + np.sqrt(speed ** 4 - g * (g * distance_in_xy_plane ** 2 + 2 * dz * speed ** 2)))
+        / (g * distance_in_xy_plane))
+    time = distance_in_xy_plane / (np.cos(theta) * speed)
+    times = np.linspace(0, time, time_frames_in_jump)
 
-    zs = z_grid[x * board_size + y] + z_coord(ts)
+    zs = z_grid[x * board_size + y] + z(times)
 
     return np.array([xs, ys, zs]).T
 
 
-def draw_step(x, y, x_nxt, y_nxt):
-    height_diff = signed_height_difference(x, y, x_nxt, y_nxt)
+def draw_step(x, y, x_next, y_next):
+    height_difference = signed_height_difference(x, y, x_next, y_next)
     speed = sufficient_speed(
-        (1 if height_diff < 0 else height_diff)
+        (1 if height_difference < 0 else height_difference)
         + np.random.randint(min_speed_boost, max_speed_boost))
 
-    points = get_points_of_step(x, y, x_nxt, y_nxt, speed)
+    points = get_points_of_step(x, y, x_next, y_next, speed)
 
     # center the plot
     points[:, [0, 1]] -= np.array([board_size // 2, board_size // 2])
 
     line = gl.GLLinePlotItem()
+    # so that points are not transparent
     line.setGLOptions('translucent')
     line.setData(pos=points, color=tuple(color[x * board_size + y]), width=line_width)
     w.addItem(line)
 
 
-def on_board(x, y):
-    return 0 <= x < board_size and 0 <= y < board_size
+def on_board(point):
+    return np.all((point >= 0) & (point < board_size))
 
 
 def get_one_step_directions():
@@ -176,38 +176,37 @@ def get_one_step_directions():
 one_step_directions = get_one_step_directions()
 
 
-def get_random_walk(path_length=100, trials=100):
-    path = np.zeros((path_length + 1, 2))
+def get_random_walk(path_length=100):
+    path = np.zeros((path_length, 2))
     path[0] = [board_size // 2, board_size // 2]
 
-    def in_path(x_coordinate, y_coordinate):
-        return any(np.equal(path, [x_coordinate, y_coordinate]).all(1))
+    def in_path(point):
+        return any(np.equal(path, point).all(1))
 
-    for i in range(path_length - 1):
-        found = False
-        for j in range(trials):
-            x_nxt, y_nxt = path[i] + one_step_directions[np.random.randint(one_step_directions.shape[0])]
-            if on_board(x_nxt, y_nxt) and not in_path(x_nxt, y_nxt):
-                path[i + 1] = [x_nxt, y_nxt]
-                found = True
-                break
-        if not found:
+    for step in range(path_length - 1):
+        direction = (path[step] + one_step_directions)
+        direction = direction[np.apply_along_axis(on_board, 1, direction) &
+                              (np.logical_not(np.apply_along_axis(in_path, 1, direction)))]
+        if len(direction) != 0:
+            path[step + 1] = direction[np.random.randint(len(direction))]
+        else:
+            path = path[:step + 1]
             break
-
     return path.astype(int)
 
 
 def draw_walk(walk):
-    for i in range(walk.shape[0] - 2):
-        if np.array_equal(walk[i + 1], walk[i + 2]):
-            break
-        x, y = walk[i]
-        x_nxt, y_nxt = walk[i + 1]
-        draw_step(x, y, x_nxt, y_nxt)
+    for i in range(walk.shape[0] - 1):
+        draw_step(*np.ravel([walk[i], walk[i + 1]]))
 
 
-for i in range(number_of_random_walks):
-    draw_walk(get_random_walk(path_length=length_of_random_walk))
+def draw_walks():
+    for i in range(number_of_random_walks):
+        draw_walk(get_random_walk(path_length=length_of_random_walk))
+
 
 if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+    if are_visible_dots:
+        draw_scatter_picture()
+    draw_walks()
     QApplication.instance().exec_()

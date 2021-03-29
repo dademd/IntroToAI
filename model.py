@@ -11,17 +11,19 @@ for d in range(1, max_visibility_distance+1):
     xs, ys = np.meshgrid([d], np.arange(-d, d+1))
     chebyshev_list[d] = np.array([xs.ravel(), ys.ravel()])
 
-# print(np.array(chebyshev_list))
 
 # directions 0>,1^,2<,3v
 
-# for each direction, contains multipliers for xs, ys to watch in clockwise direction around map
+# for each direction, contains multipliers for xs, ys
+# to watch in counter - clockwise direction around map
 # x, y
 
 # counter-clockwise codes for indices
+# ys in clockwise go from lower to upper values
+#   -> anti-clockwise is -ys
 cc = np.array([[[1, 0], [1, 1]],
-               [[0, 1], [1, 1]],
-               [[1, 0], [1, -1]],
+               [[0, 1], [1, -1]],
+               [[1, 0], [-1, -1]],
                [[0, 1], [-1, 1]]])
 len_cc = len(cc)
 
@@ -46,7 +48,7 @@ chebyshev_indices = [[get_chebyshev_indices(distance=distance, direction=directi
                      for direction in range(0, 4)]
 
 lst = chebyshev_indices[0][1]
-# print(lst)
+print(lst)
 # lst_c = np.zeros(lst.shape)
 # for i in range(len(lst)-1):
 #     print(lst[i+1]-lst[i])
@@ -55,7 +57,7 @@ lst = chebyshev_indices[0][1]
 
 def get_visible_indices(x, y, distance, direction):
     ind = chebyshev_indices[direction][distance] + np.array([x,y])
-    avail_ind = ind[(0 <= ind[:,0]) & (ind[:,0] < board_size) & (0 <= ind[:,1]) & (ind[:,1] < board_size)]
+    avail_ind = ind[np.all((ind >= 0) & (ind < board_size))]
     return avail_ind
 
 field = np.array([[set() for i in range(board_size)] for j in range(board_size)])
