@@ -178,7 +178,7 @@ def draw_jump(x, y, x_next, y_next):
 
     w.addItem(line)
     if real_time_path_drawing_enabled:
-        QtTest.QTest.qWait(line_delay)
+        QtTest.QTest.qWait(ms=line_delay)
 
 
 def on_board(point):
