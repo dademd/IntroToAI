@@ -9,18 +9,20 @@ view_directions = 4
 move_directions = 7
 min_weight, max_weight = 0, 100
 
-np.random.seed(1828283)
+np.random.seed(18759283)
 
 # I use row coordinates [x[], y[]]
 
 clockwise_turn = np.array([[0, -1], [1, 0]])
 clockwise_powers = np.array([np.linalg.matrix_power(clockwise_turn, i) for i in range(4)])
-symmetric_turn = np.array([[1,0], [0,-1]])
+symmetric_turn = np.array([[1, 0], [0, -1]])
+
 
 def get_initial_brain_coordinates():
     pos = np.array(np.meshgrid(np.arange(-max_visibility_distance, max_visibility_distance + 1),
                                np.arange(0, max_visibility_distance + 1), indexing='ij'))
     return np.reshape(pos, (2, pos.shape[1] * pos.shape[2]))
+
 
 def get_symmetric_brain_coordinates(direction):
     pos = get_initial_brain_coordinates()
@@ -32,28 +34,37 @@ def get_brain_coordinates(direction):
     pos = get_initial_brain_coordinates()
     return np.dot(clockwise_powers[direction], pos)
 
+
 brain_coordinates = np.array([get_brain_coordinates(direction) for direction in range(view_directions)])
 symmetric_brain_coordinates = \
     np.array([get_symmetric_brain_coordinates(direction) for direction in range(view_directions)])
 
+
 def get_initial_brain_weights():
     return np.random.randint(min_weight, max_weight + 1, (brain_size, move_directions))
+
 
 def get_cautiousness_coefficients():
     def chebyshev_coefficient(coordinate):
         max_coordinate = np.amax(np.abs(coordinate))
-        return 1. - max_coordinate/(max_visibility_distance+1)
+        return 1. - max_coordinate / (max_visibility_distance + 1)
+
     cautiousness = np.apply_along_axis(chebyshev_coefficient, 0, get_initial_brain_coordinates())
     # we don't consider weights under head
     head_coordinate = (max_visibility_distance + 1) * max_visibility_distance
     cautiousness.T[head_coordinate] = 0
     # we use symmetric weights and don't want a danger to be counted twice
-    cautiousness[::max_visibility_distance+1] /= 2
+    cautiousness[::max_visibility_distance + 1] /= 2
     return cautiousness
 
-cautiousness_coefficients = get_cautiousness_coefficients()
-brain_weights = get_initial_brain_weights()
-cautious_brain_weights = brain_weights * cautiousness_coefficients[:, np.newaxis]
+
+def get_cautious_brain_weights():
+    cautiousness_coefficients = get_cautiousness_coefficients()
+    brain_weights = get_initial_brain_weights()
+    return brain_weights * cautiousness_coefficients[:, np.newaxis]
+
+
+cautious_brain_weights = get_cautious_brain_weights()
 
 field = np.array([[set() for i in range(board_size)] for j in range(board_size)])
 
@@ -64,9 +75,11 @@ def add_randomly_visited_cells(id):
         i, j = np.random.randint(0, board_size - 1, (2))
         field[i][j].add(id)
 
+
 snake_ids = [2, 3, 4]
 for snake_id in snake_ids:
     add_randomly_visited_cells(snake_id)
+
 
 # print(field)
 # print(field[np.array([0,0])])
@@ -74,23 +87,30 @@ for snake_id in snake_ids:
 def get_bad_indices(x, y, brain_half, id):
     visible_coordinates = brain_half + [[x], [y]]
     print(visible_coordinates)
+
     def on_board(point):
         return np.all((0 <= point) & (point < board_size))
+
     def visited(point):
         return on_board(point) and (id in field[point[0]][point[1]])
+
     def bad(point):
         return not on_board(point) \
                or on_board(point) and visited(point)
+
     return np.where(np.apply_along_axis(bad, 0, visible_coordinates))[0]
+
 
 def get_all_bad_indices(x, y, dir, id):
     left_half = get_bad_indices(x, y, symmetric_brain_coordinates[dir], id)
     right_half = get_bad_indices(x, y, brain_coordinates[dir], id)
     return np.append(left_half, right_half)
 
+head = np.sum(cautious_brain_weights[get_all_bad_indices(2,2,0,2)], axis=0)
+chosen_direction = np.argmax(head)
+print(head, chosen_direction)
 
-print(get_all_bad_indices(2,2,0,2))
-
+# print(get_all_bad_indices(2, 2, 0, 2))
 
 # print(np.reshape(cautiousness_coefficients, (max_visibility_distance*2+1, max_visibility_distance+1)))
 
