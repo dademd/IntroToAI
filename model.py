@@ -1,9 +1,9 @@
 import numpy as np
 
-max_visibility_distance = 7
+max_visibility_distance = 3
 brain_size = (max_visibility_distance * 2 + 1) * (max_visibility_distance + 1)
 default_visibility_distance = 4
-board_size = 10
+board_size = 5
 
 view_directions = 4
 move_directions = 7
@@ -47,6 +47,8 @@ def get_cautiousness_coefficients():
     # we don't consider weights under head
     head_coordinate = (max_visibility_distance + 1) * max_visibility_distance
     cautiousness.T[head_coordinate] = 0
+    # we use symmetric weights and don't want a danger to be counted twice
+    cautiousness[::max_visibility_distance+1] /= 2
     return cautiousness
 
 cautiousness_coefficients = get_cautiousness_coefficients()
@@ -66,19 +68,29 @@ snake_ids = [2, 3, 4]
 for snake_id in snake_ids:
     add_randomly_visited_cells(snake_id)
 
-def get_bad_indices(x, y, direction, id):
-    visible_coordinates = brain_coordinates[direction] + [[x], [y]]
-    def on_board(point):
-        return np.all((0 < point) & (point < board_size))
-    def visited(point):
-        return on_board(point) and id in field[point]
-    def bad(point):
-        return not on_board(point) or visited(point)
-    all_bad = np.apply_along_axis(bad, 0, visible_coordinates)
-    return np.where(all_bad)
-
-print(get_bad_indices(2,2,1,2))
 # print(field)
+# print(field[np.array([0,0])])
+
+def get_bad_indices(x, y, brain_half, id):
+    visible_coordinates = brain_half + [[x], [y]]
+    print(visible_coordinates)
+    def on_board(point):
+        return np.all((0 <= point) & (point < board_size))
+    def visited(point):
+        return on_board(point) and (id in field[point[0]][point[1]])
+    def bad(point):
+        return not on_board(point) \
+               or on_board(point) and visited(point)
+    return np.where(np.apply_along_axis(bad, 0, visible_coordinates))[0]
+
+def get_all_bad_indices(x, y, dir, id):
+    left_half = get_bad_indices(x, y, symmetric_brain_coordinates[dir], id)
+    right_half = get_bad_indices(x, y, brain_coordinates[dir], id)
+    return np.append(left_half, right_half)
+
+
+print(get_all_bad_indices(2,2,0,2))
+
 
 # print(np.reshape(cautiousness_coefficients, (max_visibility_distance*2+1, max_visibility_distance+1)))
 
