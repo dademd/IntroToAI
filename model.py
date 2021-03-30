@@ -33,10 +33,8 @@ def get_brain_coordinates(direction):
     return np.dot(clockwise_powers[direction], pos)
 
 brain_coordinates = np.array([get_brain_coordinates(direction) for direction in range(view_directions)])
-symmetric_brain_coordinates = np.array([get_symmetric_brain_coordinates(direction) for direction in range(view_directions)])
-
-# print(brain_coordinates[1][:, :10])
-# print(symmetric_brain_coordinates[1][:, :10])
+symmetric_brain_coordinates = \
+    np.array([get_symmetric_brain_coordinates(direction) for direction in range(view_directions)])
 
 def get_initial_brain_weights():
     return np.random.randint(min_weight, max_weight + 1, (brain_size, move_directions))
@@ -46,11 +44,43 @@ def get_cautiousness_coefficients():
         max_coordinate = np.amax(np.abs(coordinate))
         return 1. - max_coordinate/(max_visibility_distance+1)
     cautiousness = np.apply_along_axis(chebyshev_coefficient, 0, get_initial_brain_coordinates())
+    # we don't consider weights under head
     head_coordinate = (max_visibility_distance + 1) * max_visibility_distance
     cautiousness.T[head_coordinate] = 0
     return cautiousness
 
 cautiousness_coefficients = get_cautiousness_coefficients()
+brain_weights = get_initial_brain_weights()
+cautious_brain_weights = brain_weights * cautiousness_coefficients[:, np.newaxis]
+
+field = np.array([[set() for i in range(board_size)] for j in range(board_size)])
+
+
+def add_randomly_visited_cells(id):
+    number_of_randomly_visited_cells = board_size
+    for cell in range(number_of_randomly_visited_cells):
+        i, j = np.random.randint(0, board_size - 1, (2))
+        field[i][j].add(id)
+
+snake_ids = [2, 3, 4]
+for snake_id in snake_ids:
+    add_randomly_visited_cells(snake_id)
+
+def get_bad_indices(x, y, direction, id):
+    visible_coordinates = brain_coordinates[direction] + [[x], [y]]
+    def on_board(point):
+        return np.all((0 < point) & (point < board_size))
+    def visited(point):
+        return on_board(point) and id in field[point]
+    def bad(point):
+        return not on_board(point) or visited(point)
+    all_bad = np.apply_along_axis(bad, 0, visible_coordinates)
+    return np.where(all_bad)
+
+print(get_bad_indices(2,2,1,2))
+# print(field)
+
+# print(np.reshape(cautiousness_coefficients, (max_visibility_distance*2+1, max_visibility_distance+1)))
 
 # get_cautiousness_coefficients()
 
