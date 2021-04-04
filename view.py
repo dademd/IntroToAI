@@ -29,23 +29,28 @@ min_speed_boost, max_speed_boost = 2, 4
 # show dots
 are_visible_dots = False
 # width of lines on path
-line_width = 1
+line_width = 4
 # for picture dots
-dot_opaqueness = 1.
+dot_opaqueness = 1.0
 number_of_random_walks = 50
 length_of_random_walk = 400
 # resolution of jump
-time_frames_in_jump = 20
+time_frames_in_jump = 2
 # side of image
 image_side = 512
 # delay between drawing lines
 line_delay = 0
 # path to image for map
-path_to_image = 'images/genie.png'
+path_to_image = "images/deadpool.png"
 # distance from origin for viewing pictures
 view_height = 70
+elevation = 70
+azimuth = 60
 # to watch how path emerges
 real_time_path_drawing_enabled = False
+# number of generated paths
+number_of_paths = 600
+
 
 shortest_jump = True
 jump_trajectory_shortener = -1 if shortest_jump else 1
@@ -53,14 +58,15 @@ jump_trajectory_shortener = -1 if shortest_jump else 1
 app = QApplication([])
 w = gl.GLViewWidget()
 w.show()
-w.setCameraPosition(distance=view_height, elevation=90, azimuth=0)
+w.setCameraPosition(distance=view_height, elevation=elevation, azimuth=azimuth)
 # g = gl.GLGridItem()
 # g.setSize(x=board_size, y=board_size,z=max_height)
 # w.addItem(g)
 
-ax = gl.GLAxisItem()
-ax.setSize(x=board_size, y=board_size, z=max_height)
-w.addItem(ax)
+# ax = gl.GLAxisItem()
+# ax.setSize(x=board_size, y=board_size, z=max_height)
+# w.addItem(ax)
+
 
 
 def read_image(path):
@@ -79,7 +85,9 @@ def get_compressed_image(path):
 
 
 def get_coordinate_grid():
-    x_grid, y_grid = np.meshgrid(np.arange(board_size), np.arange(board_size), indexing="ij")
+    x_grid, y_grid = np.meshgrid(
+        np.arange(board_size), np.arange(board_size), indexing="ij"
+    )
     return x_grid.ravel(), y_grid.ravel()
 
 
@@ -101,7 +109,7 @@ def get_point_cloud_and_colors():
     z_grid = np.apply_along_axis(rgb_to_height, 1, flat_image)
 
     # need values in [0;1]
-    normalized_image_colors = (flat_image / 255.).astype(np.float32)
+    normalized_image_colors = (flat_image / 255.0).astype(np.float32)
 
     return x_grid, y_grid, z_grid, normalized_image_colors
 
@@ -120,11 +128,12 @@ def draw_scatter_picture():
     pos[:, 0] -= board_size // 2
     pos[:, 1] -= board_size // 2
     sp2 = gl.GLScatterPlotItem(pos=pos, color=color, size=dot_size)
-    sp2.setGLOptions('translucent')
+    sp2.setGLOptions("translucent")
     w.addItem(sp2)
 
 
 # ------- plotting walks
+
 
 def signed_height_difference(x1, y1, x2, y2):
     return z_grid[x2 * board_size + y2] - z_grid[x1 * board_size + y1]
@@ -142,7 +151,8 @@ def get_points_of_jump(x, y, x_next, y_next):
     height_difference = signed_height_difference(x, y, x_next, y_next)
     speed = sufficient_speed(
         (2 if height_difference < 0 else height_difference)
-        + np.random.randint(min_speed_boost, max_speed_boost))
+        + np.random.randint(min_speed_boost, max_speed_boost)
+    )
 
     dx, dy = x_next - x, y_next - y
     dz = z_grid[(x + dx) * board_size + (y + dy)] - z_grid[x * board_size + y]
@@ -154,9 +164,15 @@ def get_points_of_jump(x, y, x_next, y_next):
         return speed * np.sin(theta) * time - (g * time ** 2) / 2
 
     theta = np.arctan(
-        (speed ** 2 + jump_trajectory_shortener * np.sqrt(
-            speed ** 4 - g * (g * distance_in_xy_plane ** 2 + 2 * dz * speed ** 2)))
-        / (g * distance_in_xy_plane))
+        (
+            speed ** 2
+            + jump_trajectory_shortener
+            * np.sqrt(
+                speed ** 4 - g * (g * distance_in_xy_plane ** 2 + 2 * dz * speed ** 2)
+            )
+        )
+        / (g * distance_in_xy_plane)
+    )
     time = distance_in_xy_plane / (np.cos(theta) * speed)
     times = np.linspace(0, time, time_frames_in_jump)
 
@@ -173,7 +189,7 @@ def draw_jump(x, y, x_next, y_next):
 
     line = gl.GLLinePlotItem()
     # so that points are not transparent
-    line.setGLOptions('translucent')
+    line.setGLOptions("translucent")
     line.setData(pos=points, color=colors, width=line_width)
 
     w.addItem(line)
@@ -204,15 +220,20 @@ def get_random_walk(path_length=100):
         return any(np.equal(path, point).all(1))
 
     for step in range(path_length - 1):
-        direction = (path[step] + one_step_directions)
-        direction = direction[np.apply_along_axis(on_board, 1, direction) &
-                              (np.logical_not(np.apply_along_axis(in_path, 1, direction)))]
+        direction = path[step] + one_step_directions
+        direction = direction[
+            np.apply_along_axis(on_board, 1, direction)
+            & (np.logical_not(np.apply_along_axis(in_path, 1, direction)))
+        ]
         if len(direction) != 0:
             path[step + 1] = direction[np.random.randint(len(direction))]
         else:
-            path = path[:step + 1]
+            path = path[: step + 1]
             break
     return path.astype(int)
+
+
+# print(repr(get_random_walk(path_length=length_of_random_walk)))
 
 
 def draw_walk(walk):
@@ -220,8 +241,20 @@ def draw_walk(walk):
         draw_jump(*np.ravel([walk[i], walk[i + 1]]))
 
 
+def draw_walks_from_file():
+    for i in range(number_of_paths):
+        # print(i)
+        snake_path = np.loadtxt(fname=f"paths/{i:03}.csv", delimiter=",").astype(int)
+        # print(repr(snake_path.T))
+        draw_walk(snake_path.T)
+
+
 def draw_random_walk():
+    # print(get_random_walk(path_length=length_of_random_walk))
     draw_walk(get_random_walk(path_length=length_of_random_walk))
+
+
+# draw_random_walk()
 
 
 def draw_random_walks():
@@ -229,8 +262,9 @@ def draw_random_walks():
         draw_random_walk()
 
 
-if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+if (sys.flags.interactive != 1) or not hasattr(QtCore, "PYQT_VERSION"):
     if are_visible_dots:
         draw_scatter_picture()
-    draw_random_walks()
+    draw_walks_from_file()
+    # draw_random_walks()
     QApplication.instance().exec_()

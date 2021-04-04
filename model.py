@@ -1,14 +1,15 @@
 import numpy as np
 
+number_of_paths = 1000
 epochs = 100
-batch_size = 10
-number_of_snakes = 20
+batch_size = 5
+number_of_snakes = 10
 
 assert number_of_snakes % 2 == 0
 snake_ids = np.arange(number_of_snakes)
 
 # use n+n generation
-number_of_parents = 5
+number_of_parents = 4
 number_of_kids = number_of_snakes - number_of_parents
 
 min_weight, max_weight = -5, 5
@@ -24,7 +25,7 @@ mutation_probability = 1 / 6
 view_directions = 4
 move_directions = 7
 
-np.random.seed(18789293)
+np.random.seed(18780293)
 
 weights_size = brain_size * (max_visibility_distance + 1)
 mutation_sample_size = int(mutation_probability * weights_size)
@@ -32,13 +33,20 @@ mutation_sample_size = int(mutation_probability * weights_size)
 # I use row coordinates [x[], y[]]
 
 clockwise_turn = np.array([[0, -1], [1, 0]])
-clockwise_powers = np.array([np.linalg.matrix_power(clockwise_turn, i) for i in range(4)])
+clockwise_powers = np.array(
+    [np.linalg.matrix_power(clockwise_turn, i) for i in range(4)]
+)
 symmetric_turn = np.array([[1, 0], [0, -1]])
 
 
 def get_initial_brain_coordinates():
-    pos = np.array(np.meshgrid(np.arange(-max_visibility_distance, max_visibility_distance + 1),
-                               np.arange(0, max_visibility_distance + 1), indexing='ij'))
+    pos = np.array(
+        np.meshgrid(
+            np.arange(-max_visibility_distance, max_visibility_distance + 1),
+            np.arange(0, max_visibility_distance + 1),
+            indexing="ij",
+        )
+    )
     return np.reshape(pos, (2, pos.shape[1] * pos.shape[2]))
 
 
@@ -53,27 +61,32 @@ def get_brain_coordinates(direction):
     return np.dot(clockwise_powers[direction], pos)
 
 
-brain_coordinates = np.array([get_brain_coordinates(direction) for direction in range(view_directions)])
-symmetric_brain_coordinates = \
-    np.array([get_symmetric_brain_coordinates(direction) for direction in range(view_directions)])
+brain_coordinates = np.array(
+    [get_brain_coordinates(direction) for direction in range(view_directions)]
+)
+symmetric_brain_coordinates = np.array(
+    [get_symmetric_brain_coordinates(direction) for direction in range(view_directions)]
+)
 
 
 def get_initial_brain_weights():
-    return np.loadtxt(fname='brains/268.csv', delimiter=',').reshape((brain_size, move_directions))
-    # return np.random.randint(min_weight, max_weight + 1, (brain_size, move_directions))
+    # return np.loadtxt(fname='brains/268.csv', delimiter=',').reshape((brain_size, move_directions))
+    return np.random.randint(min_weight, max_weight + 1, (brain_size, move_directions))
 
 
 def get_cautiousness_coefficients():
     def chebyshev_coefficient(coordinate):
         max_coordinate = np.amax(np.abs(coordinate))
-        return 1. - max_coordinate / (max_visibility_distance + 1)
+        return 1.0 - max_coordinate / (max_visibility_distance + 1)
 
-    cautiousness = np.apply_along_axis(chebyshev_coefficient, 0, get_initial_brain_coordinates())
+    cautiousness = np.apply_along_axis(
+        chebyshev_coefficient, 0, get_initial_brain_coordinates()
+    )
     # we don't consider weights under head
     head_coordinate = (max_visibility_distance + 1) * max_visibility_distance
     cautiousness.T[head_coordinate] = 0
     # we use symmetric weights and don't want a danger to be counted twice
-    cautiousness[::max_visibility_distance + 1] /= 2
+    cautiousness[:: max_visibility_distance + 1] /= 2
     return cautiousness
 
 
@@ -119,8 +132,7 @@ def visited(point, snake):
 
 
 def bad(point, snake):
-    return not on_board(point) \
-           or on_board(point) and visited(point, snake)
+    return not on_board(point) or on_board(point) and visited(point, snake)
 
 
 def get_bad_indices(point, brain_half, snake):
@@ -135,35 +147,52 @@ def get_all_bad_indices(point, direction, snake):
 
 
 def get_move_direction(point, direction, snake):
-    return np.argmax(np.sum(snake_brains[snake][get_all_bad_indices(point, direction, snake)], axis=0))
+    return np.argmax(
+        np.sum(
+            snake_brains[snake][get_all_bad_indices(point, direction, snake)], axis=0
+        )
+    )
 
 
 def get_step_coordinate(view_direction):
     initial_step_coordinates = np.array([[1, 1], [0, 1]])
-    return np.dot(clockwise_powers[view_direction],
-                  np.concatenate([np.dot(clockwise_powers[i], initial_step_coordinates)
-                                  for i in range(view_directions)], axis=1))
+    return np.dot(
+        clockwise_powers[view_direction],
+        np.concatenate(
+            [
+                np.dot(clockwise_powers[i], initial_step_coordinates)
+                for i in range(view_directions)
+            ],
+            axis=1,
+        ),
+    )
 
 
-step_coordinates = np.array([get_step_coordinate(view_direction=direction)
-                             for direction in range(view_directions)]).astype(int)
+step_coordinates = np.array(
+    [
+        get_step_coordinate(view_direction=direction)
+        for direction in range(view_directions)
+    ]
+).astype(int)
 
 
 def get_snake_path(snake):
     path_length = 100
     path = np.zeros((2, path_length)).astype(int)
     path[:, 0] = np.random.randint(low=0, high=board_size, size=2)
-    view_direction = 0
+    view_direction = np.random.randint(low=0, high=4)
 
     for i in range(path_length - 1):
-        move_direction = get_move_direction(point=path[:, i], direction=view_direction, snake=snake)
+        move_direction = get_move_direction(
+            point=path[:, i], direction=view_direction, snake=snake
+        )
         view_direction = move_direction // 2
         next_point = path[:, i] + step_coordinates[view_direction][:, move_direction]
         if not bad(next_point, snake=snake):
             path[:, i + 1] = next_point
             field[next_point[0]][next_point[1]].add(snake)
         else:
-            path = path[:, :i + 1]
+            path = path[:, : i + 1]
             break
     return path
 
@@ -172,16 +201,21 @@ def get_snake_paths(needed_paths):
     snake = 0
     for i in range(needed_paths):
         clear_field()
-        np.savetxt(fname=f"paths/{i:03}", X=get_snake_path(snake).astype(int), delimiter=',', fmt='%i')
+        snake_path = get_snake_path(snake).astype(int)
+        if snake_path.shape[1] == 1:
+            snake_path = np.append(snake_path, snake_path + [[0], [1]], axis=1)
+        np.savetxt(fname=f"paths/{i:03}.csv", X=snake_path, delimiter=",", fmt="%i")
 
 
 def get_snake_path_length(snake):
     path_length = 1
     current_point = np.random.randint(low=0, high=board_size - 1, size=2)
-    view_direction = 0
+    view_direction = np.random.randint(view_directions)
 
     for i in range(board_size ** 2):
-        move_direction = get_move_direction(point=current_point, direction=view_direction, snake=snake)
+        move_direction = get_move_direction(
+            point=current_point, direction=view_direction, snake=snake
+        )
         view_direction = move_direction // 2
         next_point = current_point + step_coordinates[view_direction][:, move_direction]
         if not bad(point=next_point, snake=snake):
@@ -204,10 +238,17 @@ def run_snakes(iteration):
 
     if iteration == batch_size - 1:
         print(top_lengths)
-        np.savetxt(fname=f"brains/{top_lengths[0]}.csv", X=snake_brains[top_snakes[0]], fmt='%.3f', delimiter=',')
+        np.savetxt(
+            fname=f"brains/{top_lengths[0]}.csv",
+            X=snake_brains[top_snakes[0]],
+            fmt="%.3f",
+            delimiter=",",
+        )
 
     crossover_probabilities = top_lengths / np.sum(top_lengths)
-    pairs = np.random.choice(a=top_snakes, p=crossover_probabilities, size=(2, number_of_kids))
+    pairs = np.random.choice(
+        a=top_snakes, p=crossover_probabilities, size=(2, number_of_kids)
+    )
     snake_brains[:number_of_parents] = snake_brains[np.sort(top_snakes)[::-1]]
 
     for index, [pa, ma] in enumerate(pairs.T):
@@ -226,15 +267,19 @@ def crossover(snake_a_id, snake_b_id, target_id):
 
 
 def mutation(pa):
-    mutation_indices = np.random.randint(low=0, high=weights_size, size=mutation_sample_size)
-    mutation_values = np.random.randint(low=min_mutation, high=max_mutation + 1, size=mutation_sample_size)
+    mutation_indices = np.random.randint(
+        low=0, high=weights_size, size=mutation_sample_size
+    )
+    mutation_values = np.random.randint(
+        low=min_mutation, high=max_mutation + 1, size=mutation_sample_size
+    )
     snake_brains[pa].ravel()[mutation_indices] += mutation_values
 
 
 # run GA
-# for i in range(epochs):
-#     for j in range(batch_size):
-#         run_snakes(j)
+for i in range(epochs):
+    for j in range(batch_size):
+        run_snakes(j)
 
 # produce paths
-get_snake_paths(20)
+# get_snake_paths(number_of_paths)
