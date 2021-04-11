@@ -13,7 +13,7 @@ min_speed_boost, max_speed_boost = 2, 4
 # show dots
 are_visible_dots = False
 # width of lines on path
-line_width = 4
+line_width = 1
 # for picture dots
 dot_opaqueness = 1.0
 number_of_random_walks = 50
@@ -44,7 +44,7 @@ mass = 3
 # side of image
 image_side = 512
 
-import numpy as np
+from globals import np
 
 # derived constants
 

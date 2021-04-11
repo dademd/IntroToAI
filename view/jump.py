@@ -22,10 +22,10 @@ def unsigned_height_difference(self, x1, y1, x2, y2):
     return np.abs(self.signed_height_difference(x1, y1, x2, y2))
 
 
-def sufficient_speed(self, height_difference):
+def sufficient_speed(height_difference):
     """selects appropriate random speeds
     for jumps from higher to lower blocks and vice-versa"""
-    return self.sufficient_vertical_speed(
+    return sufficient_vertical_speed(
         (2 if height_difference < 0 else height_difference) + np.random.randint(min_speed_boost, max_speed_boost))
 
 
@@ -41,18 +41,18 @@ def get_points_of_jump(x, y, x_next, y_next):
     return np.array([xs, ys, zs]).T
 
 
-def get_jump_zs(self, x, x_next, y, y_next):
+def get_jump_zs(x, x_next, y, y_next):
     dx, dy = x_next - x, y_next - y
-    dz = self.signed_height_difference(x, y, x_next, y_next)
-    speed = self.sufficient_speed(dz)
+    dz = signed_height_difference(x, y, x_next, y_next)
+    speed = sufficient_speed(dz)
     euclidean_distance = np.sqrt(dx ** 2 + dy ** 2)
-    theta = self.calculate_theta(dz, euclidean_distance, speed)
+    theta = calculate_theta(dz, euclidean_distance, speed)
     times = np.linspace(0, euclidean_distance / (np.cos(theta) * speed), time_frames_in_jump)
 
     def z(time):
         return speed * np.sin(theta) * time - (g * time ** 2) / 2
 
-    zs = self.z_grid[x * board_size + y] + z(times)
+    zs = z_grid[x * board_size + y] + z(times)
 
     return zs
 
@@ -62,9 +62,9 @@ def shorten_trajectory():
     return -1 if shortest_jump else 1
 
 
-def calculate_theta(self, dz, euclidean_distance, speed):
+def calculate_theta(dz, euclidean_distance, speed):
     """calculate launch angle"""
-    jump_trajectory_shortener = self.shorten_trajectory()
+    jump_trajectory_shortener = shorten_trajectory()
     return np.arctan(
         (
                 speed ** 2
@@ -81,9 +81,9 @@ def get_coordinate_color(x, y):
     return colors[x * board_size + y]
 
 
-import view
+import app
 
-widget = view.widget
+widget = app.widget
 
 
 def draw_jump(x, y, x_next, y_next):
