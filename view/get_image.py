@@ -1,12 +1,12 @@
-from parameters import path_to_image, image_side, board_size
+from view.parameters import path_to_image, image_side, board_size
 
 from globals import np
 from PIL import Image
 
 
-def read_image(image_path=path_to_image):
-    """open image and check it for validity"""
-    image = Image.open(image_path)
+def read_image():
+    """open PNG image and check it for validity"""
+    image = Image.open(path_to_image)
     image = np.asarray(image).astype(np.float32)
     return image
 

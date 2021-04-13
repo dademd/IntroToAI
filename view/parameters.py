@@ -3,7 +3,7 @@ board_size = 100
 # maximum height of points
 board_height = 20
 # size of dots
-dot_size = 4
+dot_size = 1
 # maximum initial speed
 shortest_jump = True
 # range for jump heights
@@ -11,7 +11,7 @@ max_jump_height = 30
 # adding speed to make jumps lower
 min_speed_boost, max_speed_boost = 2, 4
 # show dots
-are_visible_dots = False
+are_visible_dots = True
 # width of lines on path
 line_width = 1
 # for picture dots
@@ -30,8 +30,7 @@ elevation = 70
 azimuth = 60
 # to watch how path emerges
 real_time_path_drawing_enabled = False
-# number of generated paths
-number_of_paths = 600
+
 # shift all points by this amount
 default_shift = board_size // 2
 
@@ -44,11 +43,12 @@ mass = 3
 # side of image
 image_side = 512
 
-from globals import np
+from globals import np, number_of_paths
 
 # derived constants
 
 # maximum initial speed of jump
 max_initial_speed = np.sqrt(2 * g * max_jump_height)
 # path to image for map
-path_to_image = f"./images/{image_name}.png"
+
+path_to_image = f"./resources/images/{image_name}.png"

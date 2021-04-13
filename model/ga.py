@@ -1,19 +1,19 @@
-import board
+import model.board
 
-import brain
-snake_brains = brain.snake_brains
+import model.brain
+snake_brains = model.brain.snake_brains
 
-from parameters import batch_size, number_of_snakes, snake_ids, number_of_parents, number_of_kids, brain_size, \
+from model.parameters import batch_size, number_of_snakes, snake_ids, number_of_parents, number_of_kids, brain_size, \
     weights_size, mutation_sample_size, min_mutation, max_mutation, epochs
 from globals import np
-from path import get_snake_path_length
+from model.path import get_snake_path_length
 
 
 def run_snakes(iteration):
     """runs snakes once and saves brains of the top snake from each batch
     putting path length into file name"""
 
-    board.field = board.clear_field()
+    model.board.field = model.board.clear_field()
 
     top_lengths = crossover()
 
@@ -80,7 +80,8 @@ def mutation():
         mutation_values = np.random.randint(
             low=min_mutation, high=max_mutation + 1, size=mutation_sample_size
         )
-        snake_brains[snake].ravel()[mutation_indices] += mutation_values
+        cautious_mutation_values = mutation_values * model.brain.get_cautiousness_coefficients()
+        snake_brains[snake].ravel()[mutation_indices] += cautious_mutation_values
 
 
 def run_ga():

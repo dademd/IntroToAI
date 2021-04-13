@@ -1,5 +1,5 @@
 from globals import np
-from parameters import max_visibility_distance, view_directions, min_weight, max_weight, brain_size, move_directions, \
+from model.parameters import max_visibility_distance, view_directions, min_weight, max_weight, brain_size, move_directions, \
     snake_ids
 
 clockwise_turn = np.array([[0, -1], [1, 0]])
@@ -38,9 +38,14 @@ symmetric_brain_coordinates = np.array(
     [get_symmetric_brain_coordinates(direction) for direction in range(view_directions)]
 )
 
+def set_brains(batch):
+    """set the same saved brains to all population"""
+    brains = np.loadtxt(fname=f'./resources/brains/{batch:03}.csv', delimiter=',').reshape((brain_size, move_directions))
+    for i in snake_ids:
+        snake_brains[i] = brains
+
 
 def get_initial_brain_weights():
-    # return np.loadtxt(fname='brains/268.csv', delimiter=',').reshape((brain_size, move_directions))
     return np.random.randint(min_weight, max_weight + 1, (brain_size, move_directions))
 
 
@@ -64,7 +69,6 @@ def get_cautious_brain_weights():
     cautiousness_coefficients = get_cautiousness_coefficients()
     brain_weights = get_initial_brain_weights()
     return brain_weights * cautiousness_coefficients[:, np.newaxis]
-
 
 snake_brains = np.array([get_cautious_brain_weights() for snake_id in snake_ids])
 

@@ -1,7 +1,6 @@
 from globals import np
 
-number_of_paths = 1000
-epochs = 100
+epochs = 7
 batch_size = 5
 number_of_snakes = 10
 
@@ -29,3 +28,6 @@ np.random.seed(18780293)
 
 weights_size = brain_size * (max_visibility_distance + 1)
 mutation_sample_size = int(mutation_probability * weights_size)
+
+# batch from which the top snake's brain is selected
+top_batch = 3

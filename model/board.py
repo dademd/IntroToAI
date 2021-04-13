@@ -1,5 +1,5 @@
 from globals import np
-from parameters import board_size, snake_ids
+from model.parameters import board_size, snake_ids
 
 
 def clear_field():
