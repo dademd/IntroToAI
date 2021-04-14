@@ -23,11 +23,11 @@ time_frames_in_jump = 2
 # time delay between drawing lines
 line_delay = 0
 # name of image
-image_name = "deadpool"
+image_name = "lake"
 # distance from origin for viewing pictures
-view_height = 70
-elevation = 70
-azimuth = 60
+view_height = 109
+elevation = 90
+azimuth = 0
 # to watch how path emerges
 real_time_path_drawing_enabled = False
 
@@ -52,3 +52,5 @@ max_initial_speed = np.sqrt(2 * g * max_jump_height)
 # path to image for map
 
 path_to_image = f"./resources/images/{image_name}.png"
+
+background_color = 'k'

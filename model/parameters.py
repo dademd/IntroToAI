@@ -30,4 +30,4 @@ weights_size = brain_size * (max_visibility_distance + 1)
 mutation_sample_size = int(mutation_probability * weights_size)
 
 # batch from which the top snake's brain is selected
-top_batch = 3
+top_batch = 6
