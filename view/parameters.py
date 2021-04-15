@@ -24,9 +24,11 @@ time_frames_in_jump = 2
 line_delay = 0
 
 # distance from origin for viewing pictures
-view_height = 109
-elevation = 90
-azimuth = 0
+view_height, elevation, azimuth = 125, 90, 0
+
+# 125, 30, -30
+# 125, 40, 180
+
 # to watch how path emerges
 real_time_path_drawing_enabled = False
 
@@ -54,3 +56,6 @@ max_initial_speed = np.sqrt(2 * g * max_jump_height)
 path_to_image = f"./resources/images/{image_name}.png"
 
 background_color = 'k'
+
+window_height = 700
+window_width = 700

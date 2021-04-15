@@ -71,4 +71,3 @@ def get_cautious_brain_weights():
     return brain_weights * cautiousness_coefficients[:, np.newaxis]
 
 snake_brains = np.array([get_cautious_brain_weights() for snake_id in snake_ids])
-
