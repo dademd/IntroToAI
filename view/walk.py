@@ -33,8 +33,9 @@ def draw_random_walks():
 
 def draw_genetic_algorithm_walks():
     """draw walks produced by GA"""
+    f = open("./resources/paths/path.csv", "r")
     for i in range(number_of_paths):
-        snake_path = np.loadtxt(fname=f"./resources/paths/{i:03}.csv", delimiter=",").astype(int)
+        snake_path = np.loadtxt(fname=f, delimiter=",", max_rows=2).astype(int)
         draw_walk(snake_path.T)
 
 

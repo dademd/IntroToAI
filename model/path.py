@@ -13,8 +13,6 @@ def get_snake_path(snake=0):
 
     path = np.zeros((2, max_path_length)).astype(int)
     path_length = 1
-    # path[:, 0] = np.array([np.random.randint(low=0, high=board_size),
-    #                        np.random.randint(low=0, high=board_size)])
     path[:, 0] = unused_coordinates.pop()
     view_direction = np.random.randint(low=0, high=4)
 
@@ -38,20 +36,20 @@ def get_snake_path(snake=0):
 
     return path
 
-
 def save_snake_paths(snake=0):
-    """saves several paths into files"""
+    """saves several paths into file"""
+    open("./resources/paths/path.csv", "w").close()
+    f = open("./resources/paths/path.csv", "a+")
     for i in range(number_of_paths):
         snake_path = get_snake_path(snake).astype(int)
         model.board.field[tuple(snake_path)] = set()
-        np.savetxt(fname=f"./resources/paths/{i:03}.csv", X=snake_path, delimiter=",", fmt="%i")
+        np.savetxt(fname=f, X=snake_path, delimiter=",", fmt="%i")
 
 
 def get_snake_path_length(snake):
     """calculates length of a path"""
     path_length = 1
     current_point = np.random.randint(low=0, high=board_size - 1, size=2)
-    # current_point = np.array([board_size//2, board_size//2])
     view_direction = np.random.randint(view_directions)
 
     for step in range(board_size ** 2):
