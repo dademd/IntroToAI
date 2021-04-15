@@ -1,4 +1,4 @@
-from globals import np
+from globals.globals import np
 from view.parameters import default_shift
 import pyqtgraph.opengl as gl
 

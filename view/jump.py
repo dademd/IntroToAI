@@ -1,4 +1,4 @@
-from globals import np
+from globals.globals import np
 from PyQt5 import QtTest
 
 from view.get_point_cloud import z_grid
@@ -46,6 +46,8 @@ def get_jump_zs(x, x_next, y, y_next):
     dz = signed_height_difference(x, y, x_next, y_next)
     speed = sufficient_speed(dz)
     euclidean_distance = np.sqrt(dx ** 2 + dy ** 2)
+    if euclidean_distance > 2:
+        print(x, x_next, y, y_next)
     theta = calculate_theta(dz, euclidean_distance, speed)
     times = np.linspace(0, euclidean_distance / (np.cos(theta) * speed), time_frames_in_jump)
 

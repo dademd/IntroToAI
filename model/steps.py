@@ -4,7 +4,7 @@ import model.brain
 
 snake_brains = model.brain.snake_brains
 
-from globals import np
+from globals.globals import np
 from model.brain import symmetric_brain_coordinates, brain_coordinates, clockwise_powers
 from model.parameters import board_size, view_directions
 

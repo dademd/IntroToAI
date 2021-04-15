@@ -1,4 +1,4 @@
-from globals import np
+from globals.globals import np
 from model.parameters import board_size, snake_ids
 
 

@@ -9,11 +9,11 @@ shortest_jump = True
 # range for jump heights
 max_jump_height = 30
 # adding speed to make jumps lower
-min_speed_boost, max_speed_boost = 2, 4
+min_speed_boost, max_speed_boost = 5, 6
 # show dots
 are_visible_dots = True
 # width of lines on path
-line_width = 1
+line_width = 3
 # for picture dots
 dot_opaqueness = 1.0
 number_of_random_walks = 50
@@ -22,8 +22,7 @@ length_of_random_walk = 400
 time_frames_in_jump = 2
 # time delay between drawing lines
 line_delay = 0
-# name of image
-image_name = "lake"
+
 # distance from origin for viewing pictures
 view_height = 109
 elevation = 90
@@ -43,7 +42,8 @@ mass = 3
 # side of image
 image_side = 512
 
-from globals import np, number_of_paths
+from globals.globals import np
+from user_image import image_name
 
 # derived constants
 

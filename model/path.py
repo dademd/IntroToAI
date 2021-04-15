@@ -1,5 +1,5 @@
 import model.board
-from globals import np, max_path_length, number_of_paths
+from globals.globals import np, max_path_length, number_of_paths
 from model.parameters import board_size, view_directions
 from model.steps import bad, step_coordinates, get_move_direction, on_board
 
@@ -32,6 +32,8 @@ def get_snake_path(snake=0):
             if on_board(next_point):
                 path[:, step + 1] = next_point
                 path = path[:, : step + 2]
+            else:
+                path = path[:, : step + 1]
             break
 
     return path

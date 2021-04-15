@@ -1,4 +1,4 @@
-from globals import np, number_of_paths
+from globals.globals import np, number_of_paths
 from view.parameters import board_size, length_of_random_walk, number_of_random_walks
 from view.jump import draw_jump
 

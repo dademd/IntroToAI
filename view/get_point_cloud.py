@@ -1,5 +1,5 @@
 from view.parameters import board_size, board_height
-from globals import np
+from globals.globals import np
 from view.get_image import get_image
 
 

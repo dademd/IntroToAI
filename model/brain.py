@@ -1,4 +1,4 @@
-from globals import np
+from globals.globals import np
 from model.parameters import max_visibility_distance, view_directions, min_weight, max_weight, brain_size, move_directions, \
     snake_ids
 

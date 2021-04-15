@@ -1,4 +1,4 @@
-from globals import np
+from globals.globals import np
 
 epochs = 7
 batch_size = 5

@@ -5,7 +5,7 @@ snake_brains = model.brain.snake_brains
 
 from model.parameters import batch_size, number_of_snakes, snake_ids, number_of_parents, number_of_kids, brain_size, \
     weights_size, mutation_sample_size, min_mutation, max_mutation, epochs
-from globals import np
+from globals.globals import np
 from model.path import get_snake_path_length
 
 
