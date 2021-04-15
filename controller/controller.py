@@ -1,7 +1,8 @@
-from model.model import run_model
+def run_controller():
+    from model.model import run_model
 
-# enable just for recalculations
-# run_model()
+    # enable just for recalculations
+    # run_model()
 
-from view.view import run_view
-run_view()
+    from view.view import run_view
+    run_view()

@@ -43,7 +43,7 @@ mass = 3
 image_side = 512
 
 from globals.globals import np
-from user_image import image_name
+from main import image_name
 
 # derived constants
 
