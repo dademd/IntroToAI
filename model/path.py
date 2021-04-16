@@ -9,7 +9,7 @@ unused_coordinates = {(i, j) for i in range(1, board_size - 1) for j in range(1,
 def get_snake_path(snake=0):
     """generates a path from random point"""
     if not unused_coordinates:
-        return np.array([[0,0], [0,1]])
+        return np.array([[0, 0], [0, 1]])
 
     path = np.zeros((2, max_path_length)).astype(int)
     path_length = 1
@@ -35,6 +35,7 @@ def get_snake_path(snake=0):
             break
 
     return path
+
 
 def save_snake_paths(snake=0):
     """saves several paths into file"""
